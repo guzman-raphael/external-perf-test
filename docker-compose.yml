@@ -34,7 +34,7 @@ services:
       retries: 300
       interval: 1s
     ports:
-      # - "9000:9000"
+      - "80:80"
       - "443:443"
     volumes:
       - ./nginx/base.conf:/base.conf
