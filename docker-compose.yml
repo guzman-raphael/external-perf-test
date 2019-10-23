@@ -1,0 +1,45 @@
+version: '2.2'
+x-net: &net
+  networks:
+      - main
+services:
+  minio:
+    <<: *net
+    environment:
+      - MINIO_ACCESS_KEY=moser
+      - MINIO_SECRET_KEY=datajoint
+    image: minio/minio:$MINIO_VER
+    # ports:
+    #   - "9000:9000"
+    # volumes:
+    #   - ./minio/config:/root/.minio
+    #   - ./minio/data:/data
+    command: server /data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://minio:9000/minio/health/live"]
+      timeout: 5s
+      retries: 60
+      interval: 1s
+  testdev.datajoint.io:
+    <<: *net
+    image: nginx:alpine
+    environment:
+      - URL=datajoint.io
+      - SUBDOMAINS=testdev
+      - MINIO_SERVER=http://minio:9000
+    entrypoint: /entrypoint.sh
+    healthcheck:
+      test: wget --quiet --tries=1 --spider https://testdev.datajoint.io:443/minio/health/live || exit 1
+      timeout: 5s
+      retries: 300
+      interval: 1s
+    ports:
+      # - "9000:9000"
+      - "443:443"
+    volumes:
+      - ./nginx/base.conf:/base.conf
+      - ./nginx/entrypoint.sh:/entrypoint.sh
+      - ./nginx/fullchain.pem:/certs/fullchain.pem
+      - ./nginx/privkey.pem:/certs/privkey.pem
+networks:
+  main:
